@@ -20,6 +20,7 @@ int main()
     std::vector<std::string> files;
     StreamerClient client(serverAddr);
     client.start();
+    std::cout << client.errorMsg() << "\n";
     while(running)
     {
         std::string input;
@@ -34,7 +35,7 @@ int main()
             unsigned i = 0;
             for(const auto &f : files)
             {
-                std::cout << i << " " << f << "\n";
+                std::cout << i++ << " " << f << "\n";
             }
         }
         else if(input == "-p")
