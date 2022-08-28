@@ -1,39 +1,34 @@
 #pragma once
 
-#include <thread>
 #include <vector>
 #include <string>
+#include <thread>
 
-#include "songinfo.hpp"
-#include "tcpsocket.hpp"
 #include "wavplayer.hpp"
+#include "tcpsocket.hpp"
 #include "socketaddress.hpp"
 
 class StreamerClient
 {
 private:
-    bool m_isRunning;
-
-    bool m_isPlaying;
-
-    bool m_locked;
-
     TcpSocket *m_socket;
 
     WavPlayer *m_player;
 
-    SongInfo *m_song;
-
     std::thread *m_worker;
 
-    std::string m_fileName;
+    bool m_running;
 
-    unsigned m_bytesPlayed;
+    bool m_playing;
+
+    uint32_t m_audioDataSize;
+
+    std::string m_fileName;
 
     void doWork();
 
 public:
-    StreamerClient(SocketAddress &serverAddr);
+    StreamerClient(const SocketAddress &remoteServer);
 
     StreamerClient(const StreamerClient &other) = delete;
 
@@ -41,19 +36,11 @@ public:
 
     ~StreamerClient();
 
-    void getSongs(std::vector<std::string> &files);
+    void getSongs(std::vector<std::string> &files) const;
 
-    void play(const std::string &fileName);
-
-    void start();
-
-    void stop();
+    uint32_t play(const std::string &fileName);
 
     void pause();
 
     void resume();
-
-    bool inError() const;
-
-    const std::string &errorMsg() const;
 };

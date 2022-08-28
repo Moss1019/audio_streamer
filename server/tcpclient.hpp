@@ -14,6 +14,11 @@
 #include "memoryinputstream.hpp"
 #include "memoryoutputstream.hpp"
 
+class TcpClient;
+class MemoryInputStream;
+
+typedef void (*onReceiveCallback)(TcpClient *client, MemoryInputStream &stream);
+
 class TcpClient
 {
 private:

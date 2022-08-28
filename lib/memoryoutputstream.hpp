@@ -1,30 +1,34 @@
 #pragma once
+
 class MemoryOutputStream
 {
 private:
-	char *m_buffer;
+    char *m_buffer;
 
-	unsigned m_head;
+    unsigned m_head;
 
-	unsigned m_capacity;
+    unsigned m_capacity;
 
-	void reallocate(int newLength);
+    void reallocate(int newLength);
 
 public:
-	MemoryOutputStream();
+    MemoryOutputStream();
 
-	~MemoryOutputStream();
+    MemoryOutputStream(const MemoryOutputStream &other) = delete;
 
-	char *getBufferPtr() const;
+    MemoryOutputStream operator=(const MemoryOutputStream &other) = delete;
 
-	int getLength() const;
+    ~MemoryOutputStream();
 
-	void write(const void *data, unsigned byteCount);
+    char *getBufferPtr() const;
 
-	void write(int data);
+    int getBufferLength() const;
 
-	void write(unsigned data);
+    void write(const void *data, unsigned size);
 
-	void empty();
+    void write(int data);
+
+    void write(unsigned data);
+
+    void empty();
 };
-

@@ -1,28 +1,29 @@
 #pragma once
+
 class MemoryInputStream
 {
 private:
-	char *m_buffer;
+    char *m_buffer;
 
-	unsigned m_head;
+    unsigned m_head;
 
-	unsigned m_capacity;
-
+    unsigned m_capacity;
 public:
-	MemoryInputStream(char *buffer, int bufferSize);
+    MemoryInputStream(char *buffer, unsigned size);
 
-	MemoryInputStream(const char *buffer, int bufferSize);
+    MemoryInputStream(const MemoryInputStream &other) = delete;
 
-	~MemoryInputStream();
+    MemoryInputStream operator=(const MemoryInputStream &other) = delete;
 
-	unsigned getRemainingSize() const;
+    ~MemoryInputStream();
 
-	void read(void *data, unsigned byteCount);
+    unsigned getReminingSize() const;
 
-	void read(int &data);
+    void read(void *data, unsigned size);
 
-	void read(unsigned &data);
+    void read(int &data);
 
-	void setBuffer(void *buffer, int bufferSize);
+    void read(unsigned &data);
+
+    void setBuffer(char *buffer, unsigned size);
 };
-

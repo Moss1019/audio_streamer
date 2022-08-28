@@ -1,24 +1,26 @@
 
-#include <string>
 #include <iostream>
 
 #include "streamserver.hpp"
+#include "socketaddress.hpp"
 
+#include "wavfile.hpp"
+#include "fileinputstream.hpp"
 
-onAcceptedCallback onAccepted = []() 
+void onReceived()
 {
-    std::cout << "Accepted client\n";
-};
+    std::cout << "Client accpted\n";
+}
 
 int main()
 {
-    SocketAddress serverAddr("127.0.0.1", 8081);
-    StreamServer server(serverAddr, onAccepted);
+    SocketAddress localAddress("127.0.0.1", 8081);
+    StreamServer server(localAddress, onReceived);
     server.start();
+    std::string input;
     bool running = true;
     while(running)
     {
-        std::string input;
         std::cin >> input;
         if(input == "-q")
         {

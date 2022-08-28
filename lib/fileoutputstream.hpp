@@ -1,19 +1,25 @@
 #pragma once
 
 #include <string>
+#include <fstream>
 
 class FileOutputStream
 {
 private:
-	std::string m_fileName;
+    std::string m_fileName;
+
+    std::ofstream *m_ofStream;
+
+    unsigned m_size;
+
+    unsigned m_offset;
 
 public:
-	FileOutputStream(const std::string &fileName);
+    FileOutputStream(const std::string &fileName);
 
-	FileOutputStream(const FileOutputStream &other) = delete;
+    ~FileOutputStream();
 
-	FileOutputStream operator=(const FileOutputStream &other) = delete;
+    void writesome(char *buffer, unsigned length);
 
-	void write(char *buffer, unsigned length) const;
+    void write(char *buffer, unsigned length) const;
 };
-

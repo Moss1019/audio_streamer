@@ -1,71 +1,44 @@
 #pragma once
 
-#include <alsa/asoundlib.h>
-
 #include <queue>
 #include <string>
 #include <thread>
-#include <cstring>
 
 #include <inttypes.h>
+#include <alsa/asoundlib.h>
 
-struct WavData 
-{
-    unsigned size;
+#include "wavchunkdata.hpp"
 
-    uint16_t *data;
-
-    WavData(): size{0}, data{nullptr} {}
-
-    WavData(char *data, unsigned size)
-    {
-        this->size = size / sizeof(uint16_t);
-        this->data = new uint16_t[this->size];
-        std::memcpy(this->data, data, size);
-    }
-
-    ~WavData()
-    {
-        if(data != nullptr)
-        {
-            delete[] data;
-            data = nullptr;
-        }
-    }
-};
-
-class WavPlayer 
+class WavPlayer
 {
 private:
-    snd_pcm_t *m_sndDevice;
-
-    snd_pcm_uframes_t m_frames;
-
-    snd_pcm_uframes_t m_periodSize;
-
-    unsigned m_periodTime;
-
     unsigned m_sampleRate;
 
     unsigned m_channels;
 
-    unsigned m_currentSample;
+    bool m_hasError;
 
-    bool m_inError;
+    bool m_playing;
 
-    bool m_isPlaying;
-
-    bool m_isRunning;
+    bool m_running;
 
     std::string m_error;
 
-    std::queue<WavData *> m_dataQueue;
-
-    WavData *m_currentData;
+    snd_pcm_t *m_sndDevice;
 
     std::thread *m_worker;
 
-    void eval(int err);
+    uint16_t *m_audioData;
+
+    unsigned m_audioDataSize;
+
+    unsigned m_bytesPlayed;
+
+    WavChunkData *m_currentData;
+
+    std::queue<WavChunkData *> m_dataQueue;
+
+    void eval(int code);
 
     void doWork();
 
@@ -78,13 +51,17 @@ public:
 
     ~WavPlayer();
 
-    void play(char *data, unsigned size);
+    bool hasError() const;
+
+    const std::string &error() const;
+
+    unsigned numberChunks() const;
+
+    void play(uint16_t *buffer, unsigned size);
+
+    void play(char *buffer, unsigned size);
 
     void resume();
 
     void pause();
-
-    void stop();
-
-    unsigned numberDataChunks() const;
 };

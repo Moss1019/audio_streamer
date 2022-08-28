@@ -63,7 +63,7 @@ int TcpSocket::sendData(const MemoryOutputStream &stream)
     {
         return -1;
     }
-    int bytesSent = send(m_sock, stream.getBufferPtr(), stream.getLength(), 0);
+    int bytesSent = send(m_sock, stream.getBufferPtr(), stream.getBufferLength(), 0);
     return bytesSent;
 }
 

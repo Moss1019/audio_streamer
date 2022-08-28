@@ -1,11 +1,20 @@
 cmake_minimum_required(VERSION 3.16)
 project(client)
 
+set (CMAKE_CXX_STANDARD 20)
+
 include_directories(BEFORE ../lib)
 
-file(GLOB libsources ../lib/*.cpp)
-add_library(streamerlib ${libsources})
+add_library(streamer
+    ../lib/fileinputstream.cpp
+    ../lib/fileoutputstream.cpp
+    ../lib/memoryoutputstream.cpp
+    ../lib/memoryinputstream.cpp
+    ../lib/tcpsocket.cpp
+    ../lib/socketaddress.cpp)
 
-file(GLOB clientsources ./*.cpp)
-add_executable(streamerclient ${clientsources})
-target_link_libraries(streamerclient PRIVATE asound pthread streamerlib)
+add_executable(client
+    main.cpp
+    wavplayer.cpp
+    streamerclient.cpp)
+target_link_libraries(client PRIVATE asound pthread streamer)

@@ -16,7 +16,7 @@ void TcpClient::doWork()
 		}
 		else
 		{
-			MemoryInputStream in(out.getBufferPtr(), out.getLength());
+			MemoryInputStream in(out.getBufferPtr(), out.getBufferLength());
 			m_onReceive(this, in);
 		}
 	}

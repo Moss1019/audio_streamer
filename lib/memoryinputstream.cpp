@@ -1,61 +1,52 @@
 #include "memoryinputstream.hpp"
 
-#include <memory>
 #include <cstring>
 
-MemoryInputStream::MemoryInputStream(char *buffer, int bufferSize)
-	:m_head(0), m_capacity(bufferSize)
+MemoryInputStream::MemoryInputStream(char *buffer, unsigned size)
+    :m_buffer{nullptr}, m_head{0}, m_capacity{size}
 {
-	m_buffer = reinterpret_cast<char *>(std::malloc(bufferSize));
-	std::memcpy(m_buffer, buffer, bufferSize);
-}
-
-MemoryInputStream::MemoryInputStream(const char *buffer, int bufferSize)
-	: m_head(0), m_capacity(bufferSize)
-{
-	m_buffer = reinterpret_cast<char *>(std::malloc(bufferSize));
-	std::memcpy(m_buffer, buffer, bufferSize);
+    m_buffer = new char[size];
+    std::memcpy(m_buffer, buffer, size);
 }
 
 MemoryInputStream::~MemoryInputStream()
 {
-	if (m_buffer != nullptr)
-	{
-		std::free(m_buffer);
-		m_buffer = nullptr;
-	}
+    if(m_buffer != nullptr)
+    {
+        delete m_buffer;
+        m_buffer = nullptr;
+    }
 }
 
-unsigned MemoryInputStream::getRemainingSize() const
+unsigned MemoryInputStream::getReminingSize() const
 {
-	return m_capacity - m_head;
+    return m_capacity - m_head;
 }
 
-void MemoryInputStream::read(void *data, unsigned byteCount)
+void MemoryInputStream::read(void *data, unsigned size)
 {
-	std::memcpy(data, m_buffer + m_head, byteCount);
-	m_head += byteCount;
+    std::memcpy(data, m_buffer + m_head, size);
+    m_head += size;
 }
 
 void MemoryInputStream::read(int &data)
 {
-	read(&data, sizeof(int));
+    read(&data, sizeof(int));
 }
 
 void MemoryInputStream::read(unsigned &data)
 {
-	read(&data, sizeof(unsigned));
+    read(&data, sizeof(unsigned));
 }
 
-void MemoryInputStream::setBuffer(void *buffer, int bufferSize)
+void MemoryInputStream::setBuffer(char *buffer, unsigned size)
 {
-	m_head = 0;
-	m_capacity = bufferSize;
-	if(m_buffer != nullptr)
-	{
-		std::free(m_buffer);
-		m_buffer = nullptr;
-	}
-	m_buffer = reinterpret_cast<char *>(std::malloc(bufferSize));
-	std::memcpy(m_buffer, buffer, bufferSize);
+    m_head = 0;
+    if(m_buffer != nullptr)
+    {
+        delete[] m_buffer;
+    }
+    m_buffer = new char[size];
+    std::memcpy(m_buffer, buffer, size);
+    m_capacity = size;
 }

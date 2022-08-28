@@ -17,6 +17,8 @@ private:
 public:
     SocketAddress();
 
+    SocketAddress(const SocketAddress &other);
+
     SocketAddress operator=(const SocketAddress &other) = delete;
 
     SocketAddress(const std::string &ipAddress, unsigned short port);

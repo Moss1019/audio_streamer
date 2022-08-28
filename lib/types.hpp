@@ -19,7 +19,3 @@
 
 #endif
 
-class TcpClient;
-class MemoryInputStream;
-
-typedef void (*onReceiveCallback)(TcpClient *client, MemoryInputStream &stream);

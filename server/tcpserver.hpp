@@ -13,6 +13,10 @@
 #include "types.hpp"
 #include "socketaddress.hpp"
 
+class TcpClient;
+class MemoryInputStream;
+
+typedef void (*onReceiveCallback)(TcpClient *client, MemoryInputStream &stream);
 typedef void (*onAcceptedCallback)(void);
 
 class TcpServer

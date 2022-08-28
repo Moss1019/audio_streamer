@@ -5,9 +5,18 @@ set (CMAKE_CXX_STANDARD 20)
 
 include_directories(BEFORE ../lib)
 
-file(GLOB libsources ../lib/*.cpp)
-add_library(streamerlib ${libsources})
+add_library(streamer
+    ../lib/tcpsocket.cpp
+    ../lib/socketaddress.cpp
+    ../lib/fileinputstream.cpp
+    ../lib/fileoutputstream.cpp
+    ../lib/memoryinputstream.cpp
+    ../lib/memoryoutputstream.cpp)
 
-file(GLOB serversources ./*.cpp)
-add_executable(streamerserver ${serversources})
-target_link_libraries(streamerserver PRIVATE pthread streamerlib)
+add_executable(server
+    main.cpp
+    tcpserver.cpp
+    tcpclient.cpp
+    streamserver.cpp
+    directoryinfo.cpp)
+target_link_libraries(server PRIVATE pthread streamer)

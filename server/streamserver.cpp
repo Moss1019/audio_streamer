@@ -5,12 +5,11 @@
 #include <iostream>
 
 #include "wavfile.hpp"
-#include "songinfo.hpp"
 #include "tcpclient.hpp"
 #include "tcpmessage.hpp"
-#include "songrequest.hpp"
 #include "directoryinfo.hpp"
 #include "fileinputstream.hpp"
+#include "memoryoutputstream.hpp"
 
 StreamServer::StreamServer(const SocketAddress &address, onAcceptedCallback onAccepted)
     :m_audioFolder{"../songs"}
@@ -32,7 +31,7 @@ StreamServer::StreamServer(const SocketAddress &address, onAcceptedCallback onAc
                 oStream.write(size);
                 oStream.write(f.c_str(), size);
             }
-            message.dataLength = oStream.getLength();
+            message.dataLength = oStream.getBufferLength();
             message.data = new char[message.dataLength];
             std::memcpy(message.data, oStream.getBufferPtr(), message.dataLength);
             oStream.empty();
@@ -41,57 +40,55 @@ StreamServer::StreamServer(const SocketAddress &address, onAcceptedCallback onAc
         }
         else if (message.messageType == 2002)
         {
-            char *buffer = new char[message.dataLength];
-            std::memcpy(buffer, message.data, message.dataLength);
-            std::string fileName(buffer);
-            FileInputStream fiStream(fileName);
-            delete[] buffer;
-            unsigned size;
-            fiStream.read(&buffer, size);
-            WavFile wavDetails;
-            wavDetails.read(buffer);
-            SongInfo songDetails;
-            songDetails.channels = wavDetails.channels;
-            songDetails.length = wavDetails.length;
-            songDetails.sampleRate = wavDetails.sampleRate;
-            songDetails.size = wavDetails.size;
-            MemoryOutputStream oStream;
-            songDetails.write(oStream);
-            message.dataLength = oStream.getLength();
-            delete[] message.data;
+            MemoryInputStream fileNameStream(message.data, message.dataLength);
+            char *fileNameBuffer = new char[message.dataLength];
+            fileNameStream.read(fileNameBuffer, message.dataLength);
+            std::string fileName(fileNameBuffer, message.dataLength);
+            FileInputStream audioFile(fileName);
+            char *audioFileBuffer = new char[audioFile.size()];
+            audioFile.read(audioFileBuffer);
+            WavFile audioFileInfo(audioFileBuffer);
+            MemoryOutputStream fileInfoOut;
+            fileInfoOut.write(audioFileInfo.audioDataSize);
+            delete[] audioFileBuffer;
+            delete[] fileNameBuffer;
+            message.dataLength = fileInfoOut.getBufferLength();
             message.data = new char[message.dataLength];
-            std::memcpy(message.data, oStream.getBufferPtr(), message.dataLength);
-            oStream.empty();
-            message.write(oStream);
-            client->sendData(oStream);
-            delete[] buffer;
+            std::memcpy(message.data, fileInfoOut.getBufferPtr(), message.dataLength);
+            fileInfoOut.empty();
+            message.write(fileInfoOut);
+            client->sendData(fileInfoOut);
         }
         else if (message.messageType == 2003)
         {
-            SongRequest request;
-            MemoryInputStream iStream(message.data, message.dataLength);
-            request.read(iStream);
-            FileInputStream ifStream(request.fileName);
-            char *buffer;
-            unsigned size;
-            ifStream.read(&buffer, size);
-            WavFile file;
-            file.read(buffer);
-            MemoryOutputStream oStream;
-            unsigned computedLength = request.length;
-            if(request.offset + computedLength > file.size)
-            {
-                computedLength = file.size - request.offset;
-            }
-            oStream.write(file.frames + request.offset, computedLength);
-            message.dataLength = computedLength;
-            delete[] message.data;
-            message.data = new char[message.dataLength];
-            std::memcpy(message.data, oStream.getBufferPtr(), message.dataLength);
-            oStream.empty();
-            message.write(oStream);
-            client->sendData(oStream);
+            MemoryInputStream in(message.data, message.dataLength);
+            unsigned offset;
+            in.read(offset);
+            unsigned length;
+            in.read(length);
+            unsigned fileNameLength;
+            in.read(fileNameLength);
+            char *buffer = new char[fileNameLength];
+            in.read(buffer, fileNameLength);
+            std::string fileName(buffer, fileNameLength);
             delete[] buffer;
+            FileInputStream file(fileName);
+            buffer = new char[file.size()];
+            file.read(buffer);
+            WavFile wavFile(buffer);
+            delete[] buffer;
+            unsigned computedLength = length;
+            if(offset + computedLength > wavFile.audioDataSize)
+            {
+                computedLength = wavFile.audioDataSize - offset;
+            }
+            message.dataLength = length;
+            delete[] message.data;
+            message.data = new char[length];
+            std::memcpy(message.data, wavFile.audioData + offset, length);
+            MemoryOutputStream out;
+            message.write(out);
+            client->sendData(out);
         }
     };
     m_server = new TcpServer(address, m_onReceive, onAccepted);

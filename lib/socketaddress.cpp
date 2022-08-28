@@ -30,6 +30,11 @@ SocketAddress::SocketAddress(const std::string &ipAddress, unsigned short port)
     m_addr = *(reinterpret_cast<sockaddr *>(&host));
 }
 
+SocketAddress::SocketAddress(const SocketAddress &other)
+{
+    std::memcpy(&m_addr, &other.m_addr, sizeof(sockaddr));
+}
+
 SocketAddress::SocketAddress(const sockaddr &remote)
 {
     std::memcpy(&m_addr, &remote, sizeof(sockaddr));

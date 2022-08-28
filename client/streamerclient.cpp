@@ -1,66 +1,68 @@
 #include "streamerclient.hpp"
 
 #include <chrono>
+#include <cstring>
 
 #include <iostream>
 
 #include "tcpmessage.hpp"
-#include "songrequest.hpp"
 
 void StreamerClient::doWork()
 {
-    unsigned bytesChunkSize = 5 * 2 * 2 * 44100;
-    while(m_isRunning)
+    unsigned bytesPlayed;
+    unsigned chunkSize = 44100 * 2 * 2 * 0.5;
+    MemoryOutputStream out;
+    while(m_running)
     {
-        if(m_isPlaying)
+        if(m_playing)
         {
-            m_locked = true;
-            if(m_song != nullptr && m_bytesPlayed < m_song->size && m_player->numberDataChunks() < 2)
+            if(bytesPlayed < m_audioDataSize && m_player->numberChunks() < 1)
             {
-                SongRequest request;
-                request.fileName = m_fileName;
-                request.fileNameSize = m_fileName.length();
-                request.length = bytesChunkSize;
-                request.offset = m_bytesPlayed;
-                std::cout << "Getting " << m_bytesPlayed << "\n";
-                MemoryOutputStream oStream;
-                request.write(oStream);
                 TcpMessage message;
+                out.empty();
+                out.write(bytesPlayed);
+                out.write(chunkSize);
+                unsigned fileNameSize = m_fileName.size();
+                out.write(fileNameSize);
+                out.write(m_fileName.c_str(), fileNameSize);
                 message.messageType = 2003;
-                message.dataLength = oStream.getLength();
-                message.data = new char[oStream.getLength()];
-                std::memcpy(message.data, oStream.getBufferPtr(), oStream.getLength());
-                oStream.empty();
-                message.write(oStream);
-                int sent = m_socket->sendData(oStream);
-                oStream.empty();
-                int received = m_socket->receiveData(oStream);
-                MemoryInputStream iStream(oStream.getBufferPtr(), oStream.getLength());
-                message.read(iStream);
+                message.dataLength = out.getBufferLength();
+                message.data = new char[message.dataLength];
+                std::memcpy(message.data, out.getBufferPtr(), message.dataLength);
+                out.empty();
+                message.write(out);
+                int sent = m_socket->sendData(out);
+                out.empty();
+                int received = m_socket->receiveData(out);
+                MemoryInputStream in(out.getBufferPtr(), out.getBufferLength());
+                message.read(in);
                 m_player->play(message.data, message.dataLength);
-                m_bytesPlayed += message.dataLength;
+                bytesPlayed += message.dataLength;
+                std::this_thread::sleep_for(std::chrono::milliseconds(250));
             }
-            m_locked = false;
-        }
-        else
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(17));
-            m_locked = false;
         }
     }
-    m_player->stop();
 }
 
-StreamerClient::StreamerClient(SocketAddress &serverAddr)
-    :m_isRunning{false}, m_isPlaying{false}, m_locked{false}, m_socket{nullptr}, m_player{nullptr}, m_song{nullptr}, m_worker{nullptr}, m_bytesPlayed{0}
+StreamerClient::StreamerClient(const SocketAddress &remoteServer)
+    :m_socket{nullptr}, m_player{nullptr}, m_worker{nullptr}, m_running{false}, m_playing{false}
 {
-    m_socket = new TcpSocket(serverAddr);
+    m_socket = new TcpSocket(remoteServer);
     m_player = new WavPlayer(44100, 2);
+    m_running = true;
     m_worker = new std::thread(&StreamerClient::doWork, this);
 }
 
 StreamerClient::~StreamerClient()
 {
+    m_running = false;
+    m_playing = false;
+    if(m_worker != nullptr)
+    {
+        m_worker->join();
+        delete m_worker;
+        m_worker = nullptr;
+    }
     if(m_socket != nullptr)
     {
         delete m_socket;
@@ -71,109 +73,64 @@ StreamerClient::~StreamerClient()
         delete m_player;
         m_player = nullptr;
     }
-    if(m_worker != nullptr)
-    {
-        m_worker->join();
-        delete m_worker;
-        m_worker = nullptr;
-    }
 }
 
-void StreamerClient::getSongs(std::vector<std::string> &files)
+void StreamerClient::getSongs(std::vector<std::string> &files) const
 {
-    bool shouldPlay = m_isPlaying;
-    if(m_isPlaying) 
-    {
-        pause();
-        while(m_locked) ;
-    }
     TcpMessage message;
     message.messageType = 2001;
     MemoryOutputStream out;
     message.write(out);
-    m_socket->sendData(out);
+    int sent = m_socket->sendData(out);
     out.empty();
     int received = m_socket->receiveData(out);
-    MemoryInputStream in(out.getBufferPtr(), out.getLength());
+    MemoryInputStream in(out.getBufferPtr(), out.getBufferLength());
     message.read(in);
-    MemoryInputStream resIn(message.data, message.dataLength);
-    unsigned count;
-    resIn.read(count);
+    in.setBuffer(message.data, message.dataLength);
+    unsigned numberFiles;
+    in.read(numberFiles);
     files.clear();
-    for(unsigned i = 0; i < count; ++i)
+    for(unsigned i = 0; i < numberFiles; ++i)
     {
-        unsigned size;
-        resIn.read(size);
-        char *data = new char[size];
-        resIn.read(data, size);
-        files.push_back(std::string(data));
-        delete[] data;
-    }
-    if(shouldPlay)
-    {
-        resume();
+        unsigned fileNameLength;
+        in.read(fileNameLength);
+        char *fileNameBuffer = new char[fileNameLength];
+        in.read(fileNameBuffer, fileNameLength);
+        files.push_back(std::string(fileNameBuffer, fileNameLength));
+        delete[] fileNameBuffer;
     }
 }
 
-void StreamerClient::play(const std::string &fileName)
+uint32_t StreamerClient::play(const std::string &fileName) 
 {
-    pause();
-    while(m_locked) ;
-    m_fileName = fileName;
     TcpMessage message;
     message.messageType = 2002;
     message.dataLength = fileName.size();
     message.data = new char[message.dataLength];
     std::memcpy(message.data, fileName.c_str(), message.dataLength);
-    MemoryOutputStream oStream;
-    message.write(oStream);
-    m_socket->sendData(oStream);
-    oStream.empty();
-    int received = m_socket->receiveData(oStream);
-    MemoryInputStream iStream(oStream.getBufferPtr(), oStream.getLength());
-    message.read(iStream);
-    iStream.setBuffer(message.data, message.dataLength);
-    if(m_song != nullptr)
-    {
-        delete m_song;
-        m_song = nullptr;
-    }
-    m_song = new SongInfo();
-    m_song->read(iStream);
-    m_bytesPlayed = 0;
-    resume();
-}
-
-void StreamerClient::start()
-{
-    m_isRunning = true;
-    m_isPlaying = false;
-}
-
-void StreamerClient::stop()
-{
-    m_isPlaying = false;
-    m_isRunning = false;
+    MemoryOutputStream out;
+    message.write(out);
+    int sent = m_socket->sendData(out);
+    out.empty();
+    int received = m_socket->receiveData(out);
+    MemoryInputStream in(out.getBufferPtr(), out.getBufferLength());
+    message.read(in);
+    in.setBuffer(message.data, message.dataLength);
+    uint32_t audioDataSize;
+    in.read(&audioDataSize, sizeof(uint32_t));
+    m_audioDataSize = audioDataSize;
+    m_fileName = fileName;
+    return audioDataSize;
 }
 
 void StreamerClient::pause()
 {
-    m_isPlaying = false;
+    m_playing = false;
     m_player->pause();
 }
 
 void StreamerClient::resume()
 {
-    m_isPlaying = true;
     m_player->resume();
-}
-
-bool StreamerClient::inError() const 
-{
-    return m_socket->inError();
-}
-
-const std::string &StreamerClient::errorMsg() const 
-{
-    return m_socket->errorMsg();
+    m_playing = true;
 }
