@@ -18,14 +18,12 @@ int main()
 
     client.getSongs(files);
 
+    int i = 0;
     for(const auto &f: files)
     {
-        std::cout << f << "\n";   
+        std::cout << i++ << " " << f << "\n";   
     }
 
-    std::string fileName = files[0];
-
-    std::cout << client.play(fileName);
     client.pause();
 
     bool running = true;
@@ -36,6 +34,16 @@ int main()
         if(input == "-q")
         {
             running = false;
+        }
+        else if (input == "-s")
+        {
+            int index;
+            std::cin >> index;
+            std::cout << "Starting song " << files[0] << "\n";
+            if(index < files.size())
+            {
+                client.play(files[index]);
+            }
         }
         else if(input == "-p")
         {
