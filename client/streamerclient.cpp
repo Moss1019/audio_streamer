@@ -134,3 +134,13 @@ void StreamerClient::resume()
     m_player->resume();
     m_playing = true;
 }
+
+bool StreamerClient::inError() const 
+{
+    return m_socket->inError();
+}
+
+const std::string &StreamerClient::errorMsg() const 
+{
+    return m_socket->errorMsg();
+}

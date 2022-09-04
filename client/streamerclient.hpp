@@ -43,4 +43,8 @@ public:
     void pause();
 
     void resume();
+
+    bool inError() const;
+
+    const std::string &errorMsg() const;
 };

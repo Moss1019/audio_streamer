@@ -53,6 +53,7 @@ StreamServer::StreamServer(const SocketAddress &address, onAcceptedCallback onAc
             delete[] audioFileBuffer;
             delete[] fileNameBuffer;
             message.dataLength = fileInfoOut.getBufferLength();
+            delete[] message.data;
             message.data = new char[message.dataLength];
             std::memcpy(message.data, fileInfoOut.getBufferPtr(), message.dataLength);
             fileInfoOut.empty();
@@ -82,10 +83,10 @@ StreamServer::StreamServer(const SocketAddress &address, onAcceptedCallback onAc
             {
                 computedLength = wavFile.audioDataSize - offset;
             }
-            message.dataLength = length;
+            message.dataLength = computedLength;
             delete[] message.data;
-            message.data = new char[length];
-            std::memcpy(message.data, wavFile.audioData + offset, length);
+            message.data = new char[computedLength];
+            std::memcpy(message.data, wavFile.audioData + offset, computedLength);
             MemoryOutputStream out;
             message.write(out);
             client->sendData(out);

@@ -16,9 +16,14 @@ int main()
     StreamerClient client(serverAddress);
     std::vector<std::string> files;
 
-    client.getSongs(files);
+    if(client.inError()) 
+    {
+        std::cout << client.errorMsg() << "\n";
+    }
 
+    client.getSongs(files);
     int i = 0;
+    std::cout << "Got " << files.size() << " files\n";
     for(const auto &f: files)
     {
         std::cout << i++ << " " << f << "\n";   

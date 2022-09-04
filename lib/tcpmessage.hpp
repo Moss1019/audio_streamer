@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include <iostream>
+
 #include "memoryinputstream.hpp"
 #include "memoryoutputstream.hpp"
 
