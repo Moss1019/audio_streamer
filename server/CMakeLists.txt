@@ -18,5 +18,6 @@ add_executable(server
     tcpserver.cpp
     tcpclient.cpp
     streamserver.cpp
-    directoryinfo.cpp)
+    directoryinfo.cpp
+    wavfile.cpp)
 target_link_libraries(server PRIVATE pthread streamer)

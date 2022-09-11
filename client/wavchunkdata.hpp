@@ -4,6 +4,8 @@
 
 #include <inttypes.h>
 
+#include <iostream>
+
 #include "memoryinputstream.hpp"
 #include "memoryoutputstream.hpp"
 
@@ -23,6 +25,7 @@ struct WavChunkData
         audioChunkSize = size / sizeof(uint16_t);
         audioChunk = new uint16_t[audioChunkSize];
         std::memcpy(audioChunk, data, size);
+        std::cout << audioChunk[0] << " ";
     }
 
     WavChunkData(const WavChunkData &other) = delete;

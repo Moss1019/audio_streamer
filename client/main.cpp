@@ -1,3 +1,4 @@
+#include <cmath>
 #include <vector>
 #include <string>
 #include <cstring>
@@ -10,7 +11,7 @@
 #include "socketaddress.hpp"
 #include "streamerclient.hpp"
 
-int main()
+void audioMain() 
 {
     SocketAddress serverAddress("127.0.0.1", 8081);
     StreamerClient client(serverAddress);
@@ -61,6 +62,29 @@ int main()
             std::cout << "resuming\n";
         }
     }
+}
 
+void audioTestMain()
+{
+    unsigned seconds = 5;
+    unsigned sampleRate = 44100;
+    unsigned channels = 2;
+    double volume = 0.4;
+    double tone = 330;
+    WavPlayer player(sampleRate, channels);
+    unsigned bufferLength = sampleRate * channels * seconds;
+    uint16_t *frames = new uint16_t[sampleRate * channels * seconds];
+    for(unsigned i = 0; i < bufferLength; i += 2) 
+    {
+        double sampleFreq = sampleRate / tone;
+        frames[i] = (uint16_t)(((sin(i / sampleFreq * (3.14 * 2)) + 1) / 2 * volume) * 65535);
+        frames[i + 1] = frames[i];
+    }
+    player.play(frames, bufferLength);
+}
+
+int main()
+{
+    audioMain();
     return 0;
 }
